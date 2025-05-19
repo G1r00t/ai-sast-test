@@ -1,51 +1,81 @@
-import os
+import sqlite3
+import xml.etree.ElementTree as ET
 import pickle
-import subprocess
+import os
+from flask import Flask, request, make_response
 
-# --- Vulnerable Functions (some called, some not) ---
+app = Flask(__name__)
 
-def dangerous_eval(user_input):
-    eval(user_input)  # Not safe
-    print("Executed eval")
+# Dead Code 1: Unreachable code
+def dead_code_unreachable():
+    return
+    print("This code is never executed")
 
-def insecure_deserialization(data):
-    obj = pickle.loads(data)  # Insecure deserialization
-    print("Deserialized object:", obj)
+# Dead Code 2: Unused function
+def dead_code_unused():
+    a = 10
+    b = 20
+    return a + b
 
-def command_injection(user_cmd):
-    os.system("ping " + user_cmd)  # Command injection risk
+# Dead Code 3: Unused variable
+unused_variable = "I am not used anywhere"
 
-def unsafe_subprocess(user_input):
-    subprocess.call(user_input, shell=True)  # Dangerous usage of shell=True
+# Dead Code 4: Conditional block that never runs
+if False:
+    print("This will never run")
 
-# --- Dead Code Vulnerabilities (not called anywhere) ---
+# Dead Code 5: Deprecated or insecure usage
+def dead_code_pickle_example():
+    pickled_data = pickle.dumps({"a": 1})
+    # Function never called
+    return pickle.loads(pickled_data)
 
-def unused_dangerous_eval():
-    eval("__import__('os').system('ls')")
+def sql_injection(user_input):
+    conn = sqlite3.connect("test.db")
+    cursor = conn.cursor()
+    query = f"SELECT * FROM users WHERE username = '{user_input}'"
+    cursor.execute(query)
+    result = cursor.fetchall()
+    conn.close()
+    return result
 
-def unused_pickle_loads():
-    data = b"cos\nsystem\n(S'ls'\ntR."
-    pickle.loads(data)
+def broken_auth(username, password):
+    return username == "adminuser" and password == "xchzdhkrltu"
 
-def unused_subprocess_shell():
-    subprocess.Popen("ls -la", shell=True)
+def store_sensitive_data():
+    with open("passwords.txt", "w") as f:
+        f.write("admin:Passwo#d@&1957")
 
-# --- Safe Functions ---
+def parse_xml(xml_data):
+    tree = ET.ElementTree(ET.fromstring(xml_data))
+    return tree
 
-def greet(name):
-    print(f"Hello, {name}!")
+@app.route('/access_control', methods=['GET'])
+def access_control():
+    role = request.args.get('role')
+    if role == "admin":
+        return "Welcome Admin!"
+    return "Access Denied!"
 
-def main():
-    greet("Alice")
-    # Call some vulnerable functions
-    user_input = "1+2"
-    dangerous_eval(user_input)
+@app.route('/security_misconfig', methods=['GET'])
+def security_misconfig():
+    response = make_response("Security Misconfiguration Example")
+    response.headers['X-Powered-By'] = "Python-Flask"
+    return response
 
-    serialized = pickle.dumps({'key': 'value'})
-    insecure_deserialization(serialized)
+@app.route('/xss', methods=['GET'])
+def xss_vulnerability():
+    user_input = request.args.get('input')
+    return f"<html><body>{user_input}</body></html>"
 
-    cmd = "localhost"
-    command_injection(cmd)
+def insecure_deserialization(serialized_data):
+    return pickle.loads(serialized_data)
+
+# Dead Code 6: Dead import
+import math  # not used
+
+# Dead Code 7: Unused constant
+UNUSED_CONSTANT = 42
 
 if __name__ == "__main__":
-    main()
+    app.run(debug=True)
